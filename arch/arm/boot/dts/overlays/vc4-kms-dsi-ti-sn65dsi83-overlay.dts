@@ -45,8 +45,29 @@
 			};
 
 			panel_a: panel_a {
-				compatible = "chunghwa,claa070wp03xglvds", "simple-panel";
+				compatible = "ampire,am-1280800n4tzqw-t85h-a", "panel-lvds";
 				backlight = <&backlight_a_lvds>;
+
+				/* Physical dimensions of active area */
+				width-mm = <217>;
+				height-mm = <136>;
+
+				/* Data sheet shows VESA mapping (MSB in channel 3) */
+				data-mapping = "vesa-24";
+
+				panel-timing {
+					clock-frequency = <71403480>;
+					hactive = <1280>;
+					vactive = <800>;
+					hsync-len = <166>;
+					/* If "0" does not work, set to something non-zero and reduce hsync-len accordingly */
+					hfront-porch = <0>;
+					hback-porch = <0>;
+					/* If "0" does not work, set to something non-zero and reduce vsync-len accordingly */
+					vfront-porch = <0>;
+					vback-porch = <0>;
+					vsync-len = <23>;
+ 				};
 
 				port {
 					panel_a_in_lvds: endpoint {
@@ -54,40 +75,21 @@
 					};
 				};
 			};
-			/* Panel backlight through PWM0 on GPIO 12 */
-			backlight_b_lvds: backlight_b {
-				compatible = "gpio-backlight";
-				brightness-levels = <0  1000>;
-				num-interpolated-steps = <1000>;
-				default-brightness-level = <800>;
-				gpios = <&gpio 18 0>; /* Backlight enable... */
-			};
-
-			panel_b: panel_b {
-				compatible = "chunghwa,claa070wp03xglvds", "simple-panel";
-				backlight = <&backlight_b_lvds>;
-
-				port {
-					panel_b_in_lvds: endpoint {
-						remote-endpoint = <&bridge_out_b>;
-					};
-				};
-			};
 		};
 	};
 
 	fragment@3 {
-		target = <&i2c_csi_dsi>;
+		target = <&i2c1>;
 		__overlay__ {
 			#gpio-cells = <2>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "okay";
 
-			bridge@2c {
-				compatible = "ti,sn65dsi85";
-				reg = <0x2c>;
-				enable-gpios = <&gpio 4 0>;
+			bridge@2d {
+				compatible = "ti,sn65dsi83";
+				reg = <0x2d>;
+				enable-gpios = <&gpio 4 GPIO_OPEN_DRAIN>;
 
 				ports {
 					#address-cells = <1>;
@@ -100,24 +102,11 @@
 							data-lanes = <0 1 2>;
 						};
 					};
-					port@1 {
-						reg = <1>;
-						bridge_b_in: endpoint {
-							remote-endpoint = <&dsi0_out_port>;
-							data-lanes = <0 1>;
-						};
-					};
 
 					port@2 {
 						reg = <2>;
 						bridge_out_a: endpoint {
 							remote-endpoint = <&panel_a_in_lvds>;
-						};
-					};
-					port@3 {
-						reg = <3>;
-						bridge_out_b: endpoint {
-							remote-endpoint = <&panel_b_in_lvds>;
 						};
 					};
 				};
@@ -137,35 +126,6 @@
 					data-lanes = <0 1 2>;
 				};
 			};
-		};
-	};
-
-	fragment@5 {
-		target = <&dsi0>;
-		__overlay__ {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			status = "okay";
-			port {
-				dsi0_out_port: endpoint {
-					remote-endpoint = <&bridge_b_in>;
-					data-lanes = <0 1>;
-				};
-			};
-		};
-	};
-
-	fragment@6 {
-		target = <&i2c0if>;
-		__overlay__ {
-			status = "okay";
-		};
-	};
-		
-	fragment@7 {
-		target = <&i2c0mux>;
-		__overlay__ {
-			status = "okay";
 		};
 	};
 };
