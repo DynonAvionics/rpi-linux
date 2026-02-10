@@ -168,7 +168,7 @@ void main(void)
 #endif
 
 	/* Set the video mode */
-	set_video();
+	//set_video();
 
 	/* Parse command line for 'quiet' and pass it to decompressor. */
 	if (cmdline_find_option_bool("quiet"))
