@@ -866,6 +866,17 @@ static const struct input_device_id evdev_ids[] = {
 
 MODULE_DEVICE_TABLE(input, evdev_ids);
 
+static struct input_device_id evdev_blacklist[] =
+{ /* Added by EETI */
+	{
+		.flags = INPUT_DEVICE_ID_MATCH_BUS | INPUT_DEVICE_ID_MATCH_VENDOR,
+		.bustype = BUS_USB,
+		.vendor = 0x0EEF,
+	},
+	{},
+	/* Terminating entry */
+};
+
 static struct input_handler evdev_handler = {
 	.event		= evdev_event,
 	.connect	= evdev_connect,
@@ -874,6 +885,7 @@ static struct input_handler evdev_handler = {
 	.minor		= EVDEV_MINOR_BASE,
 	.name		= "evdev",
 	.id_table	= evdev_ids,
+	.blacklist = evdev_blacklist, /* Added by EETI */
 };
 
 static int __init evdev_init(void)

@@ -869,6 +869,11 @@ static const struct input_device_id joydev_ids[] = {
 		.evbit = { BIT_MASK(EV_ABS) },
 		.absbit = { BIT_MASK(ABS_THROTTLE) },
 	},
+	{
+		.flags = INPUT_DEVICE_ID_MATCH_BUS | INPUT_DEVICE_ID_MATCH_VENDOR,
+		.bustype = BUS_VIRTUAL,
+		.vendor = 0x0EEF,
+	}, /* Added by EETI */
 	{ }	/* Terminating entry */
 };
 

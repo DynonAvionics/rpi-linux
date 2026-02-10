@@ -1050,6 +1050,23 @@ static const struct input_device_id mousedev_ids[] = {
 
 MODULE_DEVICE_TABLE(input, mousedev_ids);
 
+static struct input_device_id mousedev_blacklist[] =
+{
+	/* Added by EETI */
+	{
+		.flags = INPUT_DEVICE_ID_MATCH_BUS | INPUT_DEVICE_ID_MATCH_VENDOR,
+		.bustype = BUS_USB,
+		.vendor = 0x0EEF,
+	},
+	{
+		.flags = INPUT_DEVICE_ID_MATCH_BUS | INPUT_DEVICE_ID_MATCH_VENDOR,
+		.bustype = BUS_VIRTUAL,
+		.vendor = 0x0EEF,
+	},
+	{},
+	/* Terminating entry */
+};
+
 static struct input_handler mousedev_handler = {
 	.event =	mousedev_event,
 	.connect =	mousedev_connect,
@@ -1058,6 +1075,7 @@ static struct input_handler mousedev_handler = {
 	.minor =	MOUSEDEV_MINOR_BASE,
 	.name =		"mousedev",
 	.id_table =	mousedev_ids,
+	.blacklist = mousedev_blacklist, /* Added by EETI */
 };
 
 #ifdef CONFIG_INPUT_MOUSEDEV_PSAUX
