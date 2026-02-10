@@ -195,7 +195,7 @@ static const struct serial8250_config uart_config[] = {
 		.name		= "16550A",
 		.fifo_size	= 16,
 		.tx_loadsz	= 16,
-		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_00,
 		.flags		= UART_CAP_FIFO,
 	},
 	[PORT_CIRRUS] = {
@@ -1383,15 +1383,6 @@ receive_chars(struct uart_8250_port *up, unsigned int *status)
 	do {
 		if (likely(lsr & UART_LSR_DR))
 			ch = serial_inp(up, UART_RX);
-		else
-			/*
-			 * Intel 82571 has a Serial Over Lan device that will
-			 * set UART_LSR_BI without setting UART_LSR_DR when
-			 * it receives a break. To avoid reading from the
-			 * receive buffer without UART_LSR_DR bit set, we
-			 * just force the read character to be 0
-			 */
-			ch = 0;
 
 		flag = TTY_NORMAL;
 		up->port.icount.rx++;
@@ -1412,8 +1403,8 @@ receive_chars(struct uart_8250_port *up, unsigned int *status)
 				 * may get masked by ignore_status_mask
 				 * or read_status_mask.
 				 */
-				if (uart_handle_break(&up->port))
-					goto ignore_char;
+			if (uart_handle_break(&up->port))
+				goto ignore_char;
 			} else if (lsr & UART_LSR_PE)
 				up->port.icount.parity++;
 			else if (lsr & UART_LSR_FE)
@@ -1670,6 +1661,8 @@ static int serial_link_irq_chain(struct uart_8250_port *up)
 		INIT_LIST_HEAD(&up->list);
 		i->head = &up->list;
 		spin_unlock_irq(&i->lock);
+
+		if( up->port.irq == 4 ) irq_flags |= IRQF_NOBALANCING | IRQF_DISABLED;
 
 		ret = request_irq(up->port.irq, serial8250_interrupt,
 				  irq_flags, "serial", i);

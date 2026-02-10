@@ -57,7 +57,7 @@
 static struct platform_device *pdev;
 
 #define DRVNAME "w83627hf"
-enum chips { w83627hf, w83627thf, w83697hf, w83637hf, w83687thf };
+enum chips { w83627hf, w83627thf, w83627uhf, w83697hf, w83637hf, w83687thf };
 
 static u16 force_addr;
 module_param(force_addr, ushort, 0);
@@ -144,6 +144,7 @@ superio_exit(void)
 
 #define W627_DEVID 0x52
 #define W627THF_DEVID 0x82
+#define W627UHF_DEVID 0xA2
 #define W697_DEVID 0x60
 #define W637_DEVID 0x70
 #define W687THF_DEVID 0x85
@@ -1152,6 +1153,9 @@ static int __init w83627hf_find(int sioaddr, unsigned short *addr,
 	case W627THF_DEVID:
 		sio_data->type = w83627thf;
 		break;
+	case W627UHF_DEVID:
+		sio_data->type = w83627uhf;
+		break;
 	case W697_DEVID:
 		sio_data->type = w83697hf;
 		break;
@@ -1289,6 +1293,7 @@ static int __devinit w83627hf_probe(struct platform_device *pdev)
 	static const char *names[] = {
 		"w83627hf",
 		"w83627thf",
+		"w83627uhf",
 		"w83697hf",
 		"w83637hf",
 		"w83687thf",
