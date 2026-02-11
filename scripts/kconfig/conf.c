@@ -27,7 +27,8 @@ enum {
 	set_yes,
 	set_mod,
 	set_no,
-	set_random
+	set_random,
+	savedefconfig
 } input_mode = ask_all;
 char *defconfig_file;
 
@@ -439,7 +440,7 @@ int main(int ac, char **av)
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	textdomain(PACKAGE);
 
-	while ((opt = getopt(ac, av, "osdD:nmyrh")) != -1) {
+	while ((opt = getopt(ac, av, "osdD:S:nmyrh")) != -1) {
 		switch (opt) {
 		case 'o':
 			input_mode = ask_silent;
@@ -453,6 +454,10 @@ int main(int ac, char **av)
 			break;
 		case 'D':
 			input_mode = set_default;
+			defconfig_file = optarg;
+			break;
+		case 'S':
+			input_mode = savedefconfig;
 			defconfig_file = optarg;
 			break;
 		case 'n':
@@ -521,6 +526,7 @@ int main(int ac, char **av)
 			exit(1);
 		}
 		break;
+	case savedefconfig:
 	case ask_silent:
 	case ask_all:
 	case ask_new:
@@ -579,6 +585,8 @@ int main(int ac, char **av)
 	case set_default:
 		conf_set_all_new_symbols(def_default);
 		break;
+	case savedefconfig:
+		break;
 	case ask_new:
 	case ask_all:
 		rootEntry = &rootmenu;
@@ -604,6 +612,12 @@ int main(int ac, char **av)
 		}
 		if (conf_write_autoconf()) {
 			fprintf(stderr, _("\n*** Error during update of the kernel configuration.\n\n"));
+			return 1;
+		}
+	} else if (input_mode == savedefconfig) {
+		if (conf_write_defconfig(defconfig_file)) {
+			fprintf(stderr, _("n*** Error while saving defconfig to: %s\n\n"),
+			        defconfig_file);
 			return 1;
 		}
 	} else {

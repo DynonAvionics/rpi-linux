@@ -389,6 +389,140 @@ int conf_read(const char *name)
 	return 0;
 }
 
+/* Write a S_STRING */
+static void conf_write_string(bool headerfile, const char *name,
+                              const char *str, FILE *out)
+{
+	int l;
+	if (headerfile)
+		fprintf(out, "#define CONFIG_%s \"", name);
+	else
+		fprintf(out, "CONFIG_%s=\"", name);
+
+	while (1) {
+		l = strcspn(str, "\"\\");
+		if (l) {
+			fwrite(str, l, 1, out);
+			str += l;
+		}
+		if (!*str)
+			break;
+		fprintf(out, "\\%c", *str++);
+	}
+	fputs("\"\n", out);
+}
+
+static void conf_write_symbol(struct symbol *sym, enum symbol_type type,
+                              FILE *out, bool write_no)
+{
+	const char *str;
+
+	switch (type) {
+	case S_BOOLEAN:
+	case S_TRISTATE:
+		switch (sym_get_tristate_value(sym)) {
+		case no:
+			if (write_no)
+				fprintf(out, "# CONFIG_%s is not set\n", sym->name);
+			break;
+		case mod:
+			fprintf(out, "CONFIG_%s=m\n", sym->name);
+			break;
+		case yes:
+			fprintf(out, "CONFIG_%s=y\n", sym->name);
+			break;
+		}
+		break;
+	case S_STRING:
+		conf_write_string(false, sym->name, sym_get_string_value(sym), out);
+		break;
+	case S_HEX:
+	case S_INT:
+		str = sym_get_string_value(sym);
+		fprintf(out, "CONFIG_%s=%s\n", sym->name, str);
+		break;
+	case S_OTHER:
+	case S_UNKNOWN:
+		break;
+	}
+}
+
+/*
+ * Write out a minimal config.
+ * All values that has default values are skipped as this is redundant.
+ */
+int conf_write_defconfig(const char *filename)
+{
+	struct symbol *sym;
+	struct menu *menu;
+	FILE *out;
+
+	out = fopen(filename, "w");
+	if (!out)
+		return 1;
+
+	sym_clear_all_valid();
+
+	/* Traverse all menus to find all relevant symbols */
+	menu = rootmenu.list;
+
+	while (menu != NULL)
+	{
+		sym = menu->sym;
+		if (sym == NULL) {
+			if (!menu_is_visible(menu))
+				goto next_menu;
+		} else if (!sym_is_choice(sym)) {
+			sym_calc_value(sym);
+			if (!(sym->flags & SYMBOL_WRITE))
+				goto next_menu;
+			sym->flags &= ~SYMBOL_WRITE;
+			/* If we cannot change the symbol - skip */
+			if (!sym_is_changable(sym))
+				goto next_menu;
+			/* If symbol equals to default value - skip */
+			if (strcmp(sym_get_string_value(sym), sym_get_string_default(sym)) == 0)
+				goto next_menu;
+
+			/*
+			 * If symbol is a choice value and equals to the
+			 * default for a choice - skip.
+			 * But only if value equal to "y".
+			 */
+			if (sym_is_choice_value(sym)) {
+				struct symbol *cs;
+				struct symbol *ds;
+
+				cs = prop_get_symbol(sym_get_choice_prop(sym));
+				ds = sym_choice_default(cs);
+				if (sym == ds) {
+					if ((sym->type == S_BOOLEAN ||
+					sym->type == S_TRISTATE) &&
+					sym_get_tristate_value(sym) == yes)
+						goto next_menu;
+				}
+			}
+			conf_write_symbol(sym, sym->type, out, true);
+		}
+next_menu:
+		if (menu->list != NULL) {
+			menu = menu->list;
+		}
+		else if (menu->next != NULL) {
+			menu = menu->next;
+		} else {
+			while ((menu = menu->parent)) {
+				if (menu->next != NULL) {
+					menu = menu->next;
+					break;
+				}
+			}
+		}
+	}
+	fclose(out);
+	return 0;
+}
+
 int conf_write(const char *name)
 {
 	FILE *out;
